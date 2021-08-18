@@ -1,2 +1,87 @@
 <kingpuiwan class="github io"></kingpuiwan>
 hello
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous" type="fda943b8907a14ebc683a909-text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous" type="fda943b8907a14ebc683a909-text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous" type="fda943b8907a14ebc683a909-text/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous" type="fda943b8907a14ebc683a909-text/javascript"></script>
+</head>
+<body>
+<div class="container">
+<video class="input_video"></video>
+<canvas class="output_canvas" width="1280px" height="720px"></canvas>
+</div>
+<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="fda943b8907a14ebc683a909-|49" defer=""></script></body>
+</html>
+<script type="fda943b8907a14ebc683a909-module">
+const videoElement = document.getElementsByClassName('input_video')[0];
+const canvasElement = document.getElementsByClassName('output_canvas')[0];
+const canvasCtx = canvasElement.getContext('2d');
+
+
+function calculate_angle(a,b,c){
+    var radians = Math.atan2(c.y-b.y, c.x-b.x) - Math.atan2(a.y-b.y, a.x-b.x);
+    var angle = (radians*180/Math.PI);
+    
+    if (angle > 180) 
+        angle = 360-angle;
+    return angle;
+}
+
+function find_angle(input_array, point_1, point_2, point_3)
+{
+    if ( typeof (input_array[point_1]) !== 'undefined' && typeof (input_array[point_2]) !== 'undefined' && typeof (input_array[point_3]) !== 'undefined' )
+        var angle = calculate_angle(input_array[point_1],input_array[point_2], input_array[point_3] )
+        return angle
+
+    return 0
+}
+
+
+function onResults(results) {
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    canvasCtx.drawImage(
+        results.image, 0, 0, canvasElement.width, canvasElement.height);
+    drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTIONS,
+                    {color: '#00FF00', lineWidth: 4});
+    drawLandmarks(canvasCtx, results.poseLandmarks,
+                {color: '#FF0000', lineWidth: 2});
+    canvasCtx.restore();
+
+
+
+    if ( typeof (results.poseLandmarks[14]) !== 'undefined' && typeof (results.poseLandmarks[12]) !== 'undefined' && typeof (results.poseLandmarks[11]) !== 'undefined' )
+        var angle = find_angle(results.poseLandmarks, 14, 12, 11)
+
+        canvasCtx.font = "30px Arial";
+        canvasCtx.fillText("Angle"+angle, 10, 50);        
+        console.log(angle)
+
+
+}
+
+const pose = new Pose({locateFile: (file) => {
+  return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+}});
+pose.setOptions({
+  modelComplexity: 1,
+  smoothLandmarks: true,
+  minDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5
+});
+pose.onResults(onResults);
+
+const camera = new Camera(videoElement, {
+  onFrame: async () => {
+    await pose.send({image: videoElement});
+  },
+  width: 1280,
+  height: 720
+});
+camera.start();
+</script>
+
